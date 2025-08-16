@@ -1,6 +1,6 @@
 # Security Scanner
 
-Security Scanner is a lightweight, Python-based tool designed to detect vulnerabilities in web applications and code repositories. It provides fast scanning, customizable rules, and seamless integration with CI/CD pipelines, making it ideal for developers and security professionals.
+Security Scanner is a lightweight, Python-based tool designed to detect vulnerabilities in web applications and code repositories. It provides fast scanning, customizable rules, making it ideal for developers and security professionals.
 
 ## Features
 
