@@ -8,6 +8,16 @@
         table { border-collapse: collapse; width: 100%; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background: #f2f2f2; }
+        a.download-btn { 
+            background-color: #4CAF50; 
+            color: white; 
+            padding: 5px 10px; 
+            text-decoration: none; 
+            border-radius: 4px;
+        }
+        a.download-btn:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -20,6 +30,7 @@
             <th>Ports</th>
             <th>Options</th>
             <th>Results (JSON)</th>
+            <th>Report</th>
         </tr>
         {% for scan in scans %}
             <tr>
@@ -34,6 +45,9 @@
                     Vuln: {{ scan.vuln_scan }}
                 </td>
                 <td><pre>{{ scan.results }}</pre></td>
+                <td>
+                    <a class="download-btn" href="{{ url_for('download_report', scan_id=scan.id) }}">Download PDF</a>
+                </td>
             </tr>
         {% endfor %}
     </table>

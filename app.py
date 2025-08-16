@@ -1,9 +1,11 @@
 import nmap
 import json
-from flask import Flask, render_template, request, redirect, url_for
+import os
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from colorama import init, Fore, Style  # For colored console logs (optional)
+from fpdf import FPDF
 
 init()  # Initialize colorama
 
@@ -11,6 +13,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///scans.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+os.makedirs('reports', exist_ok=True)
 
 # Database model for scan history
 class Scan(db.Model):
@@ -73,6 +76,44 @@ def scan_target(target, ports='1-1024', verbose=False, os_detection=False, servi
     
     return results
 
+def generate_pdf_report(scan):
+    """
+    Generate a PDF report for a given Scan object.
+    """
+    results = json.loads(scan.results)
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16)
+
+    pdf.cell(0, 10, "Web security Scan Report", ln=True, align="C")
+    pdf.set_font("Arial", "", 12)
+    pdf.cell(0, 10, f"Traget: {scan.target}", ln=True)
+    pdf.cell(0, 10, f"Timestammp: {scan.timestamp}", ln=True)
+    pdf.cell(0, 10, f"Ports: {scan.ports}", ln=True)
+    pdf.cell(0, 10, f"Options - Verbose: {scan.verbose}, OS: {scan.os_detection}, Service:  {scan.service_detection}, Vulnerability Scan: {scan.vuln_scan}", ln=True)
+    pdf.ln(5)
+
+    for host, host_info in results.items():
+        pdf.set_font("Arial", "B",12)
+        pdf.cell(0, 10, f"Host: {host} ({host_info.get('hostname', '')})", ln=True)
+        pdf.set_font("Arial", "", 12)
+        pdf.cell(0, 8, f"status: {host_info.get('status', 'unknown')}", ln=True)
+        if 'os' in host_info:
+            pdf.cell(0, 8, f"OS Info: {host_info['os']}", ln=True)
+        
+        for proto, ports in host_info.get('protocols', {}).items():
+            pdf.cell(0, 8, f"Protocol: {proto}", ln=True)
+            for port, info in ports.items():
+                line = f"Port {port} - {info.get('name', '')} ({info.get('product', '')}/{info.get('version', '')}) State: {info.get('state')}"
+                if 'vulnerabilities' in info:
+                    line += f" | Vulnerabilities: {info['vulnerabilities']}"
+                pdf.multi_cell(0, 8, line)
+        pdf.ln(3)
+
+    filename = f"scan_report_{scan.id}.pdf"
+    pdf.output(f"reports/{filename}")
+    return filename
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -109,3 +150,10 @@ def history():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=1818, debug=True)
+
+@app.route('/download/<int:scan_id>')
+def download_report(scan_id):
+    scan = Scan.query.get_or_404(scan_id)
+    os.makedirs('reports', exist_ok=True)
+    filename = generate_pdf_report(scan)
+    return send_from_directory('reports', filename, as_attachment=True)
