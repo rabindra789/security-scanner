@@ -2,7 +2,7 @@ version: '3.8'
 services:
   security-scanner:
     container_name: scanner-app
-    build: .
+    image: rabindra789/security-scanner 
     privileged: true  # For Nmap OS detection/vuln scans
     ports:
       - "1818:1818"

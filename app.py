@@ -4,15 +4,11 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-<<<<<<< HEAD
 from colorama import init, Fore, Style
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, Alignment
-=======
-from colorama import init, Fore, Style  # For colored console logs (optional)
 from fpdf import FPDF
->>>>>>> 61176a65837c66fe31cb121d9878959f6180ca02
 
 init()  # Initialize colorama
 
@@ -21,6 +17,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///scans.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 os.makedirs('reports', exist_ok=True)
+
+# Custom template filter for basename
+@app.template_filter('basename')
+def basename_filter(path):
+    return os.path.basename(path)
 
 # Database model for scan history
 class Scan(db.Model):
@@ -83,11 +84,8 @@ def scan_target(target, ports='1-1024', verbose=False, os_detection=False, servi
     
     return results
 
-<<<<<<< HEAD
 def generate_excel_report(scan):
-    """
-    Generate an Excel report for a given Scan object.
-    """
+    """Generate an Excel report for a given Scan object."""
     results = json.loads(scan.results)
     wb = Workbook()
     ws = wb.active
@@ -149,70 +147,27 @@ def generate_excel_report(scan):
 
     filename = f"scan_report_{scan.id}.xlsx"
     wb.save(f"reports/{filename}")
-=======
-def generate_pdf_report(scan):
-    """
-    Generate a PDF report for a given Scan object.
-    """
-    results = json.loads(scan.results)
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
-
-    pdf.cell(0, 10, "Web security Scan Report", ln=True, align="C")
-    pdf.set_font("Arial", "", 12)
-    pdf.cell(0, 10, f"Traget: {scan.target}", ln=True)
-    pdf.cell(0, 10, f"Timestammp: {scan.timestamp}", ln=True)
-    pdf.cell(0, 10, f"Ports: {scan.ports}", ln=True)
-    pdf.cell(0, 10, f"Options - Verbose: {scan.verbose}, OS: {scan.os_detection}, Service:  {scan.service_detection}, Vulnerability Scan: {scan.vuln_scan}", ln=True)
-    pdf.ln(5)
-
-    for host, host_info in results.items():
-        pdf.set_font("Arial", "B",12)
-        pdf.cell(0, 10, f"Host: {host} ({host_info.get('hostname', '')})", ln=True)
-        pdf.set_font("Arial", "", 12)
-        pdf.cell(0, 8, f"status: {host_info.get('status', 'unknown')}", ln=True)
-        if 'os' in host_info:
-            pdf.cell(0, 8, f"OS Info: {host_info['os']}", ln=True)
-        
-        for proto, ports in host_info.get('protocols', {}).items():
-            pdf.cell(0, 8, f"Protocol: {proto}", ln=True)
-            for port, info in ports.items():
-                line = f"Port {port} - {info.get('name', '')} ({info.get('product', '')}/{info.get('version', '')}) State: {info.get('state')}"
-                if 'vulnerabilities' in info:
-                    line += f" | Vulnerabilities: {info['vulnerabilities']}"
-                pdf.multi_cell(0, 8, line)
-        pdf.ln(3)
-
-    filename = f"scan_report_{scan.id}.pdf"
-    pdf.output(f"reports/{filename}")
->>>>>>> 61176a65837c66fe31cb121d9878959f6180ca02
     return filename
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-<<<<<<< HEAD
-    result = None
-=======
->>>>>>> 61176a65837c66fe31cb121d9878959f6180ca02
     if request.method == 'POST':
-        target = request.form['target']
+        target = request.form.get('target')
         ports = request.form.get('ports', '1-1024')
         verbose = 'verbose' in request.form
         os_detection = 'os_detection' in request.form
         service_detection = 'service_detection' in request.form
         vuln_scan = 'vuln_scan' in request.form
-<<<<<<< HEAD
+
+        if not target:
+            return render_template('index.html', error="Please provide a target IP or hostname")
 
         results = scan_target(target, ports, verbose, os_detection, service_detection, vuln_scan)
+        
+        if 'error' in results:
+            return render_template('index.html', error=results['error'])
 
-        # Save in DB
-=======
-        
-        results = scan_target(target, ports, verbose, os_detection, service_detection, vuln_scan)
-        
         # Store in database
->>>>>>> 61176a65837c66fe31cb121d9878959f6180ca02
         new_scan = Scan(
             target=target,
             ports=ports,
@@ -220,49 +175,30 @@ def index():
             os_detection=os_detection,
             service_detection=service_detection,
             vuln_scan=vuln_scan,
-<<<<<<< HEAD
-            results=json.dumps(results)  # raw storage
-        )
-        db.session.add(new_scan)
-        db.session.commit()
-
-        # For display: pretty JSON
-        result = results
-
-    return render_template('index.html', result=result)
-=======
             results=json.dumps(results)
         )
         db.session.add(new_scan)
         db.session.commit()
-        
-        return render_template('results.html', results=results)
-    
+
+        # Generate reports
+        excel_file = generate_excel_report(new_scan)
+        pdf_file = generate_pdf_report(new_scan)
+
+        return render_template('index.html', result=results, excel_file=excel_file, pdf_file=pdf_file)
+
     return render_template('index.html')
->>>>>>> 61176a65837c66fe31cb121d9878959f6180ca02
 
 @app.route('/history')
 def history():
     scans = Scan.query.order_by(Scan.timestamp.desc()).all()
     return render_template('history.html', scans=scans)
 
-<<<<<<< HEAD
-=======
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=1818, debug=True)
-
->>>>>>> 61176a65837c66fe31cb121d9878959f6180ca02
-@app.route('/download/<int:scan_id>')
-def download_report(scan_id):
+@app.route('/download/<int:scan_id>/<string:file_type>')
+def download_report(scan_id, file_type):
     scan = Scan.query.get_or_404(scan_id)
     os.makedirs('reports', exist_ok=True)
-<<<<<<< HEAD
     filename = generate_excel_report(scan)
     return send_from_directory('reports', filename, as_attachment=True)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=1818, debug=True)
-=======
-    filename = generate_pdf_report(scan)
-    return send_from_directory('reports', filename, as_attachment=True)
->>>>>>> 61176a65837c66fe31cb121d9878959f6180ca02
