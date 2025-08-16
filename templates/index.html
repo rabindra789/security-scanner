@@ -1,18 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Security Scanner</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        form { max-width: 400px; }
-        label { display: block; margin: 10px 0; }
-        input[type="submit"] { margin-top: 10px; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        form {
+            max-width: 400px;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0;
+        }
+
+        input[type="submit"] {
+            margin-top: 10px;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background: #f4f4f4;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
     </style>
 </head>
+
 <body>
     <h1>Web-Based Security Scanner</h1>
     <p>Enter scan details below. Only scan permitted targets!</p>
+
     <form method="POST">
         <label>Target (IP/Hostname): <input type="text" name="target" required></label>
         <label>Port Range (e.g., 1-1024): <input type="text" name="ports" value="1-1024"></label>
@@ -22,6 +47,35 @@
         <label><input type="checkbox" name="vuln_scan"> Vulnerability Scanning</label>
         <input type="submit" value="Run Scan">
     </form>
+
     <a href="/history">View Scan History</a>
+
+    {% if result %}
+    <h2>Recent Scan Result</h2>
+    {% for ip, data in result.items() %}
+    <h3>{{ data.hostname }} ({{ ip }}) - Status: {{ data.status }}</h3>
+    <table border="1" cellpadding="5">
+        <tr>
+            <th>Port</th>
+            <th>State</th>
+            <th>Service</th>
+            <th>Product</th>
+            <th>Version</th>
+        </tr>
+        {% for port, details in data.protocols.tcp.items() %}
+        <tr>
+            <td>{{ port }}/tcp</td>
+            <td>{{ details.state }}</td>
+            <td>{{ details.name }}</td>
+            <td>{{ details.product }}</td>
+            <td>{{ details.version }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endfor %}
+    {% endif %}
+
+
 </body>
+
 </html>

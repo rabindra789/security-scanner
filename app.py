@@ -1,9 +1,13 @@
 import nmap
 import json
-from flask import Flask, render_template, request, redirect, url_for
+import os
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-from colorama import init, Fore, Style  # For colored console logs (optional)
+from colorama import init, Fore, Style
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import Font, Alignment
 
 init()  # Initialize colorama
 
@@ -11,6 +15,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///scans.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+os.makedirs('reports', exist_ok=True)
 
 # Database model for scan history
 class Scan(db.Model):
@@ -73,8 +78,76 @@ def scan_target(target, ports='1-1024', verbose=False, os_detection=False, servi
     
     return results
 
+def generate_excel_report(scan):
+    """
+    Generate an Excel report for a given Scan object.
+    """
+    results = json.loads(scan.results)
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Scan Report"
+
+    # Define headers
+    headers = ["Host", "Hostname", "Status", "Protocol", "Port", "Service", "Product", "Version", "State", "OS Info", "Vulnerabilities"]
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col)
+        cell.value = header
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(wrap_text=True)
+
+    # Add scan metadata
+    ws.append(["Scan Metadata", "", "", "", "", "", "", "", "", "", ""])
+    ws.append(["Target", scan.target, "", "", "", "", "", "", "", "", ""])
+    ws.append(["Timestamp", str(scan.timestamp), "", "", "", "", "", "", "", "", ""])
+    ws.append(["Ports", scan.ports, "", "", "", "", "", "", "", "", ""])
+    ws.append(["Options", f"Verbose: {scan.verbose}, OS: {scan.os_detection}, Service: {scan.service_detection}, Vuln: {scan.vuln_scan}", "", "", "", "", "", "", "", "", ""])
+    ws.append([])  # Empty row for spacing
+
+    # Add scan results
+    row = ws.max_row + 1
+    for host, host_info in results.items():
+        status = host_info.get('status', 'unknown')
+        hostname = host_info.get('hostname', '')
+        os_info = json.dumps(host_info.get('os', {}), indent=2) if 'os' in host_info else ""
+
+        for proto, ports in host_info.get('protocols', {}).items():
+            for port, info in ports.items():
+                vulnerabilities = json.dumps(info.get('vulnerabilities', {}), indent=2) if 'vulnerabilities' in info else ""
+                ws.append([
+                    host,
+                    hostname,
+                    status,
+                    proto,
+                    port,
+                    info.get('name', ''),
+                    info.get('product', ''),
+                    info.get('version', ''),
+                    info.get('state', ''),
+                    os_info,
+                    vulnerabilities
+                ])
+                os_info = ""  # Only include OS info for the first row of each host
+
+    # Adjust column widths
+    for col in range(1, len(headers) + 1):
+        max_length = 0
+        column = get_column_letter(col)
+        for cell in ws[column]:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)  # Cap width at 50
+        ws.column_dimensions[column].width = adjusted_width
+
+    filename = f"scan_report_{scan.id}.xlsx"
+    wb.save(f"reports/{filename}")
+    return filename
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    result = None
     if request.method == 'POST':
         target = request.form['target']
         ports = request.form.get('ports', '1-1024')
@@ -82,10 +155,10 @@ def index():
         os_detection = 'os_detection' in request.form
         service_detection = 'service_detection' in request.form
         vuln_scan = 'vuln_scan' in request.form
-        
+
         results = scan_target(target, ports, verbose, os_detection, service_detection, vuln_scan)
-        
-        # Store in database
+
+        # Save in DB
         new_scan = Scan(
             target=target,
             ports=ports,
@@ -93,19 +166,27 @@ def index():
             os_detection=os_detection,
             service_detection=service_detection,
             vuln_scan=vuln_scan,
-            results=json.dumps(results)
+            results=json.dumps(results)  # raw storage
         )
         db.session.add(new_scan)
         db.session.commit()
-        
-        return render_template('results.html', results=results)
-    
-    return render_template('index.html')
+
+        # For display: pretty JSON
+        result = results
+
+    return render_template('index.html', result=result)
 
 @app.route('/history')
 def history():
     scans = Scan.query.order_by(Scan.timestamp.desc()).all()
     return render_template('history.html', scans=scans)
+
+@app.route('/download/<int:scan_id>')
+def download_report(scan_id):
+    scan = Scan.query.get_or_404(scan_id)
+    os.makedirs('reports', exist_ok=True)
+    filename = generate_excel_report(scan)
+    return send_from_directory('reports', filename, as_attachment=True)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=1818, debug=True)

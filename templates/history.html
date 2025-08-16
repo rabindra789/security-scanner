@@ -4,24 +4,80 @@
     <meta charset="UTF-8">
     <title>Scan History</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background: #f2f2f2; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            table-layout: fixed;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            word-wrap: break-word;
+        }
+        th {
+            background: #f2f2f2;
+        }
+        a.download-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        a.download-btn:hover {
+            background-color: #45a049;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow: auto;
+            max-width: 100%;
+            max-height: 200px; /* Limit height of JSON display */
+            margin: 0;
+            padding: 5px;
+            background: #f8f8f8;
+        }
+        .json-container {
+            position: relative;
+        }
+        .json-preview {
+            display: block;
+        }
+        .json-full {
+            display: none;
+        }
+        .toggle-btn {
+            cursor: pointer;
+            color: #007bff;
+            text-decoration: underline;
+            margin-top: 5px;
+            display: inline-block;
+        }
+
+        ::-webkit-scrollbar {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <h1>Scan History</h1>
-    <table>
-        <tr>
-            <th>ID</th>
-            <th>Timestamp</th>
-            <th>Target</th>
-            <th>Ports</th>
-            <th>Options</th>
-            <th>Results (JSON)</th>
-        </tr>
-        {% for scan in scans %}
+    <div style="max-height: 600px; overflow-y: auto; overflow-x: hidden;">
+        <table>
+            <tr>
+                <th style="width: 5%;">ID</th>
+                <th style="width: 15%;">Timestamp</th>
+                <th style="width: 15%;">Target</th>
+                <th style="width: 10%;">Ports</th>
+                <th style="width: 15%;">Options</th>
+                <th style="width: 35%;">Results (JSON)</th>
+                <th style="width: 10%;">Report</th>
+            </tr>
+            {% for scan in scans %}
             <tr>
                 <td>{{ scan.id }}</td>
                 <td>{{ scan.timestamp }}</td>
@@ -33,10 +89,39 @@
                     Services: {{ scan.service_detection }}<br>
                     Vuln: {{ scan.vuln_scan }}
                 </td>
-                <td><pre>{{ scan.results }}</pre></td>
+                <td>
+                    <div class="json-container">
+                        <pre class="json-preview">{{ scan.results[:500] + '...' if scan.results|length > 500 else scan.results }}</pre>
+                        {% if scan.results|length > 500 %}
+                        <pre class="json-full">{{ scan.results }}</pre>
+                        <span class="toggle-btn" onclick="toggleJson(this, {{ scan.id }})">Show More</span>
+                        {% endif %}
+                    </div>
+                </td>
+                <td>
+                    <a class="download-btn" href="{{ url_for('download_report', scan_id=scan.id) }}">Download</a>
+                </td>
             </tr>
-        {% endfor %}
-    </table>
+            {% endfor %}
+        </table>
+    </div>
     <a href="/">Back to Scanner</a>
+
+    <script>
+        function toggleJson(element, scanId) {
+            const container = element.parentElement;
+            const preview = container.querySelector('.json-preview');
+            const full = container.querySelector('.json-full');
+            if (full.style.display === 'none') {
+                preview.style.display = 'none';
+                full.style.display = 'block';
+                element.textContent = 'Show Less';
+            } else {
+                preview.style.display = 'block';
+                full.style.display = 'none';
+                element.textContent = 'Show More';
+            }
+        }
+    </script>
 </body>
 </html>
