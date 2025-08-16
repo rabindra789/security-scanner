@@ -48,8 +48,7 @@ docker run --rm rabindra789/security-scanner:latest
 This repository uses GitHub Actions to automatically build and push Docker images to [Docker Hub](https://hub.docker.com/r/rabindra789/security-scanner) on pushes to the `main` branch.
 To set up:
 1. Ensure a `Dockerfile` exists in the repository root.
-2. Add `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets in GitHub Settings > Secrets and variables > Actions.
-3. The workflow in `.github/workflows/docker-build-push.yml` handles building and pushing images.
+2. The workflow in `.github/workflows/docker-build-push.yml` handles building and pushing images.
 
 ## Contributing
 Contributions are welcome! To contribute:

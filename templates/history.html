@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Scan History</title>
     <style>
+<<<<<<< HEAD
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
@@ -27,11 +28,23 @@
             color: white;
             padding: 5px 10px;
             text-decoration: none;
+=======
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f2f2f2; }
+        a.download-btn { 
+            background-color: #4CAF50; 
+            color: white; 
+            padding: 5px 10px; 
+            text-decoration: none; 
+>>>>>>> 61176a65837c66fe31cb121d9878959f6180ca02
             border-radius: 4px;
         }
         a.download-btn:hover {
             background-color: #45a049;
         }
+<<<<<<< HEAD
         pre {
             white-space: pre-wrap;
             word-wrap: break-word;
@@ -62,10 +75,13 @@
         ::-webkit-scrollbar {
             display: none;
         }
+=======
+>>>>>>> 61176a65837c66fe31cb121d9878959f6180ca02
     </style>
 </head>
 <body>
     <h1>Scan History</h1>
+<<<<<<< HEAD
     <div style="max-height: 600px; overflow-y: auto; overflow-x: hidden;">
         <table>
             <tr>
@@ -78,6 +94,19 @@
                 <th style="width: 10%;">Report</th>
             </tr>
             {% for scan in scans %}
+=======
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Timestamp</th>
+            <th>Target</th>
+            <th>Ports</th>
+            <th>Options</th>
+            <th>Results (JSON)</th>
+            <th>Report</th>
+        </tr>
+        {% for scan in scans %}
+>>>>>>> 61176a65837c66fe31cb121d9878959f6180ca02
             <tr>
                 <td>{{ scan.id }}</td>
                 <td>{{ scan.timestamp }}</td>
@@ -89,6 +118,7 @@
                     Services: {{ scan.service_detection }}<br>
                     Vuln: {{ scan.vuln_scan }}
                 </td>
+<<<<<<< HEAD
                 <td>
                     <div class="json-container">
                         <pre class="json-preview">{{ scan.results[:500] + '...' if scan.results|length > 500 else scan.results }}</pre>
@@ -100,6 +130,11 @@
                 </td>
                 <td>
                     <a class="download-btn" href="{{ url_for('download_report', scan_id=scan.id) }}">Download</a>
+=======
+                <td><pre>{{ scan.results }}</pre></td>
+                <td>
+                    <a class="download-btn" href="{{ url_for('download_report', scan_id=scan.id) }}">Download PDF</a>
+>>>>>>> 61176a65837c66fe31cb121d9878959f6180ca02
                 </td>
             </tr>
             {% endfor %}
