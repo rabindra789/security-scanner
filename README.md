@@ -26,7 +26,7 @@ Security Scanner is a lightweight, Python-based tool designed to detect vulnerab
    ```bash
    pip install -r requirements.txt
    ```
-3. Configure the scanner by editing `config.yaml` (if applicable).
+3. Run the `app.py` file
 
 ### Docker Installation
 Pull the latest image from Docker Hub:
