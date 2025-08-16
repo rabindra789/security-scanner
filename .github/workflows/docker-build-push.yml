@@ -10,7 +10,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch all history for commit hash
+          fetch-depth: 0  # Fetch all history for commit hash (optional, can be removed if not needed)
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -27,7 +27,6 @@ jobs:
         with:
           images: rabindra789/security-scanner
           tags: |
-            type=sha,format=long,prefix=
             type=raw,value=latest
 
       - name: Build and push Docker image
