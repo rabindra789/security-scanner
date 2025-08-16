@@ -1,0 +1,7 @@
+instance/
+reports/
+*.db
+*.xlsx
+__pycache__/
+*.pyc
+venv/
