@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Scan Results</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        pre { background: #f4f4f4; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Scan Results</h1>
+    {% if results.error %}
+        <p style="color: red;">Error: {{ results.error }}</p>
+    {% else %}
+        {% for host, data in results.items() %}
+            <h2>Host: {{ host }} ({{ data.hostname }}) - Status: {{ data.status.upper() }}</h2>
+            {% if data.os %}
+                <h3>Detected OS:</h3>
+                <ul>
+                    {% for os_class in data.os %}
+                        <li>Type: {{ os_class.type }}, Vendor: {{ os_class.vendor }}, Accuracy: {{ os_class.accuracy }}%</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% for proto, ports in data.protocols.items() %}
+                <h3>Protocol: {{ proto.upper() }}</h3>
+                <ul>
+                    {% for port, info in ports.items() %}
+                        <li>Port {{ port }}: {{ info.state.upper() }} - Service: {{ info.name }} ({{ info.product }} {{ info.version }})</li>
+                        {% if info.vulnerabilities %}
+                            <ul>
+                                {% for script, output in info.vulnerabilities.items() %}
+                                    <li>{{ script }}: {{ output }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            {% endfor %}
+        {% endfor %}
+    {% endif %}
+    <a href="/">Run Another Scan</a> | <a href="/history">View History</a>
+</body>
+</html>

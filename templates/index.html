@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Security Scanner</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        form { max-width: 400px; }
+        label { display: block; margin: 10px 0; }
+        input[type="submit"] { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Web-Based Security Scanner</h1>
+    <p>Enter scan details below. Only scan permitted targets!</p>
+    <form method="POST">
+        <label>Target (IP/Hostname): <input type="text" name="target" required></label>
+        <label>Port Range (e.g., 1-1024): <input type="text" name="ports" value="1-1024"></label>
+        <label><input type="checkbox" name="verbose"> Verbose Output</label>
+        <label><input type="checkbox" name="os_detection"> OS Detection (may need sudo in Docker)</label>
+        <label><input type="checkbox" name="service_detection"> Service Version Detection</label>
+        <label><input type="checkbox" name="vuln_scan"> Vulnerability Scanning</label>
+        <input type="submit" value="Run Scan">
+    </form>
+    <a href="/history">View Scan History</a>
+</body>
+</html>
