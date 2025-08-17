@@ -17,6 +17,11 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 os.makedirs('reports', exist_ok=True)
 
+# Custom template filter for basename
+@app.template_filter('basename')
+def basename_filter(path):
+    return os.path.basename(path)
+
 # Database model for scan history
 class Scan(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -79,9 +84,7 @@ def scan_target(target, ports='1-1024', verbose=False, os_detection=False, servi
     return results
 
 def generate_excel_report(scan):
-    """
-    Generate an Excel report for a given Scan object.
-    """
+    """Generate an Excel report for a given Scan object."""
     results = json.loads(scan.results)
     wb = Workbook()
     ws = wb.active
@@ -149,7 +152,7 @@ def generate_excel_report(scan):
 def index():
     result = None
     if request.method == 'POST':
-        target = request.form['target']
+        target = request.form.get('target')
         ports = request.form.get('ports', '1-1024')
         verbose = 'verbose' in request.form
         os_detection = 'os_detection' in request.form
@@ -157,6 +160,9 @@ def index():
         vuln_scan = 'vuln_scan' in request.form
 
         results = scan_target(target, ports, verbose, os_detection, service_detection, vuln_scan)
+        
+        if 'error' in results:
+            return render_template('index.html', error=results['error'])
 
         # Save in DB
         new_scan = Scan(
