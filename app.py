@@ -8,7 +8,6 @@ from colorama import init, Fore, Style
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, Alignment
-from fpdf import FPDF
 
 init()  # Initialize colorama
 
@@ -182,9 +181,8 @@ def index():
 
         # Generate reports
         excel_file = generate_excel_report(new_scan)
-        pdf_file = generate_pdf_report(new_scan)
 
-        return render_template('index.html', result=results, excel_file=excel_file, pdf_file=pdf_file)
+        return render_template('index.html', result=results, excel_file=excel_file)
 
     return render_template('index.html')
 
@@ -193,8 +191,8 @@ def history():
     scans = Scan.query.order_by(Scan.timestamp.desc()).all()
     return render_template('history.html', scans=scans)
 
-@app.route('/download/<int:scan_id>/<string:file_type>')
-def download_report(scan_id, file_type):
+@app.route('/download/<int:scan_id>')
+def download_report(scan_id):
     scan = Scan.query.get_or_404(scan_id)
     os.makedirs('reports', exist_ok=True)
     filename = generate_excel_report(scan)
