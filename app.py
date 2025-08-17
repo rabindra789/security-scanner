@@ -150,6 +150,7 @@ def generate_excel_report(scan):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    result = None
     if request.method == 'POST':
         target = request.form.get('target')
         ports = request.form.get('ports', '1-1024')
@@ -158,15 +159,12 @@ def index():
         service_detection = 'service_detection' in request.form
         vuln_scan = 'vuln_scan' in request.form
 
-        if not target:
-            return render_template('index.html', error="Please provide a target IP or hostname")
-
         results = scan_target(target, ports, verbose, os_detection, service_detection, vuln_scan)
         
         if 'error' in results:
             return render_template('index.html', error=results['error'])
 
-        # Store in database
+        # Save in DB
         new_scan = Scan(
             target=target,
             ports=ports,
@@ -174,17 +172,15 @@ def index():
             os_detection=os_detection,
             service_detection=service_detection,
             vuln_scan=vuln_scan,
-            results=json.dumps(results)
+            results=json.dumps(results)  # raw storage
         )
         db.session.add(new_scan)
         db.session.commit()
 
-        # Generate reports
-        excel_file = generate_excel_report(new_scan)
+        # For display: pretty JSON
+        result = results
 
-        return render_template('index.html', result=results, excel_file=excel_file)
-
-    return render_template('index.html')
+    return render_template('index.html', result=result)
 
 @app.route('/history')
 def history():
